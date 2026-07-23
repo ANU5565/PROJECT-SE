@@ -16,6 +16,9 @@ The system immediately begins "cooking" your project.
 It orchestrates multiple specialized AI agents, each responsible for a specific phase of software development.
 
 Within minutes, it plans the architecture, generates the entire codebase, writes documentation, creates tests, structures the project, and prepares everything for deployment—all without manual intervention.
+
+![n8n Workflow](./n8n.png)
+
 - ✨ What It Does
 - 🧠 Understands natural language requirements
 - 🎨 Generates modern, responsive UI/UX
