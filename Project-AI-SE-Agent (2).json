@@ -1,0 +1,1129 @@
+{
+  "name": "Project-AI-SE-Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "e08b492a-ea94-40b2-8cb7-160574c34fad",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1f41e57-0dd8-470c-9fba-8b421b1c5550",
+              "name": "project_request",
+              "value": "Build a 3D gym equipment website using React, vite ",
+              "type": "string"
+            },
+            {
+              "id": "bebfc7e7-ba28-4453-9c94-ff6bd9f759a5",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        0
+      ],
+      "id": "bd63e4f9-01f6-4f2e-b6c3-6df414834f6e",
+      "name": "project request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{$json.project_request}}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a Senior Software Project Manager.  Your job is NOT to generate code.  Analyze the software request and produce:    Return everything using Markdown. like below\n{\n  \"project_name\": \"Choose one\",\n  \"description\": \"management application\",\n  \"tech_stack\": {\n    \"frontend\": \"React\",\n    \"backend\": \"FastAPI\",\n    \"database\": \"PostgreSQL\"\n  },\n  \"modules\": [\n    \"Authentication\",\n    \"Patients\",\n    \"Doctors\",\n    \"Appointments\"\n  ],\n  \"features\": [\n    \"Patient Registration\",\n    \"Billing\",\n    \"Inventory\"\n  ]\n}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        320,
+        0
+      ],
+      "id": "d527e82a-9b4e-41f7-aaaa-35542ce2fd7f",
+      "name": "project manager agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output || \n             $input.first().json.text || \n             JSON.stringify($input.first().json);\n\nreturn [\n  {\n    json: {\n      project: {\n        raw_plan: text,\n        project_name: \"\",\n        description: \"\",\n        features: [],\n        modules: [],\n        tech_stack: {},\n        architecture: {},\n        tasks: [],\n        backend: {},\n        frontend: {},\n        database: {},\n        tests: {},\n        documentation: {}\n      }\n    }\n  }\n];;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "c686ef09-5ff8-4f4e-a3a4-8dbe360a7dd5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const project = $input.first().json.project || {};\n\nlet text =\n  $input.first().json.output ??\n  $input.first().json.text ??\n  \"\";\n\ntext = text.trim();\n\n// Remove markdown\ntext = text.replace(/^```json\\s*/i, \"\");\ntext = text.replace(/^```\\s*/i, \"\");\ntext = text.replace(/\\s*```$/i, \"\");\n\n// Auto-fix missing closing braces\nconst openBraces = (text.match(/{/g) || []).length;\nconst closeBraces = (text.match(/}/g) || []).length;\n\nif (closeBraces < openBraces) {\n  text += \"}\".repeat(openBraces - closeBraces);\n}\n\nproject.architecture = JSON.parse(text);\n\nreturn [\n  {\n    json: {\n      project\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        0
+      ],
+      "id": "457c147a-9c1e-4c83-93c0-7414a031d2fd",
+      "name": "Merge architucte"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1472,
+        256
+      ],
+      "id": "e88b895d-431a-449b-ba83-3fa1c196e2d7",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "vrW3aQduXxuB3uT4",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.project.raw_plan }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a Senior Software Architect.  You are designing the architecture for a software project.  You will receive the current project state.  Your job is to populate ONLY the architecture section.  Do NOT generate source code.  Return ONLY valid JSON.  JSON format:  {   \"architecture\": {     \"frontend\": {       \"framework\": \"\",       \"pages\": [],       \"components\": []     },     \"backend\": {       \"framework\": \"\",       \"modules\": [],       \"apis\": []     },     \"database\": {       \"type\": \"\",       \"tables\": []     },     \"authentication\": {       \"method\": \"\",       \"roles\": []     }   } }"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        880,
+        0
+      ],
+      "id": "942be56d-c1a4-48b5-b407-49c576074743",
+      "name": "Architucte agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Task ID:\n{{ $json.id }}\n\nTitle:\n{{ $json.title }}\n\nDescription:\n{{ $json.description }}\n\nTarget File:\n{{ $json.targetFile }}\n\nDependencies:\n{{ JSON.stringify($json.dependencies) }}\n\nGenerate the requested file.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a Senior Software Engineer.\n\nGenerate production-ready code for ONE task.\n\nRules:\n\n1. Generate ONLY ONE file.\n2. Do NOT explain anything.\n3. Do NOT use Markdown.\n4. Do NOT wrap code inside ``` blocks.\n5. Output MUST follow EXACTLY this format:\n\nPATH:\n<relative file path>\n\nCODE:\n<complete source code>\n\nDo not output anything else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2688,
+        80
+      ],
+      "id": "ac4db886-bf9c-4a81-a0d5-8731c93ea9a7",
+      "name": "backend agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a complete implementation plan for the following software architecture.\n\nArchitecture:\n\n{{ JSON.stringify($json.project.architecture.architecture, null, 2) }}\n\nRequirements:\n\n- Generate every required implementation task.\n- Include Frontend tasks.\n- Include Backend tasks.\n- Include Database tasks.\n- Include Testing tasks.\n- Include Documentation tasks.\n- Every task must generate exactly ONE file.\n- Use the correct task ID prefix:\n  - FE for Frontend\n  - BE for Backend\n  - DB for Database\n  - TS for Testing\n  - DOC for Documentation\n- Dependencies must reference task IDs only.\n- Use complete project-relative file paths.\n\nReturn exactly one valid JSON object.",
+        "options": {
+          "systemMessage": "You are a Senior Software Project Planner.\n\nYour job is to convert a software architecture into a complete implementation plan.\n\nYour output MUST be valid JSON.\n\nRules:\n\n- Return ONLY one JSON object.\n- Do NOT use Markdown.\n- Do NOT use triple backticks.\n- Do NOT explain anything.\n- Do NOT output text before or after JSON.\n- Every task must belong to exactly ONE category.\n\nTask Categories\n\nFrontend\n- Prefix: FE\n- React\n- Next.js\n- HTML\n- CSS\n- JavaScript\n- TypeScript\n- UI Components\n- Pages\n- Layouts\n- Forms\n- Routing\n- State Management\n\nBackend\n- Prefix: BE\n- FastAPI\n- Flask\n- Django\n- Express\n- APIs\n- Authentication\n- Authorization\n- Business Logic\n- Services\n- Controllers\n- Middleware\n\nDatabase\n- Prefix: DB\n- PostgreSQL\n- MySQL\n- SQLite\n- MongoDB\n- Database Schema\n- Models\n- ORM\n- Migrations\n- Seed Data\n\nTesting\n- Prefix: TS\n- Pytest\n- Jest\n- Cypress\n- Playwright\n- Unit Tests\n- Integration Tests\n- API Tests\n- Frontend Tests\n\nDocumentation\n- Prefix: DOC\n- README\n- Installation Guide\n- API Documentation\n- Architecture Documentation\n- User Guide\n- Deployment Guide\n\nID Rules\n\nFrontend:\nFE-001\nFE-002\nFE-003\n...\n\nBackend:\nBE-001\nBE-002\n...\n\nDatabase:\nDB-001\nDB-002\n...\n\nTesting:\nTS-001\nTS-002\n...\n\nDocumentation:\nDOC-001\nDOC-002\n...\n\nDependencies\n\n- Dependencies must reference other task IDs.\n- Do NOT use technology names like \"React\" or \"FastAPI\" as dependencies.\n- Example:\n\n\"dependencies\":[\n    \"FE-001\",\n    \"BE-002\"\n]\n\nTarget File Rules\n\nAlways generate complete project-relative paths.\n\nExamples\n\nFrontend\n\nfrontend/src/main.jsx\nfrontend/src/App.jsx\nfrontend/src/components/Header.jsx\nfrontend/src/pages/Home.jsx\n\nBackend\n\nbackend/app/main.py\nbackend/app/api/auth.py\nbackend/app/services/user_service.py\nbackend/app/models/user.py\n\nDatabase\n\ndatabase/schema.sql\ndatabase/migrations/001_initial.sql\n\nTesting\n\ntests/backend/test_auth.py\ntests/frontend/Header.test.jsx\n\nDocumentation\n\ndocs/README.md\ndocs/API.md\ndocs/SETUP.md\n\nTask Rules\n\nEach task must create exactly ONE file.\n\nDo not combine multiple files into one task.\n\nReturn this exact format:\n\n{\n  \"tasks\": [\n    {\n      \"id\": \"\",\n      \"title\": \"\",\n      \"description\": \"\",\n      \"targetFile\": \"\",\n      \"dependencies\": []\n    }\n  ]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "f4099815-6729-4c64-8491-00f46cb8b63f",
+      "name": "test planner agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Task ID:\n{{ $json.id }}\n\nTitle:\n{{ $json.title }}\n\nDescription:\n{{ $json.description }}\n\nTarget File:\n{{ $json.targetFile }}\n\nDependencies:\n{{ JSON.stringify($json.dependencies) }}\n\nGenerate the requested file.",
+        "options": {
+          "systemMessage": "You are a Senior Software Engineer.\n\nGenerate production-ready code for ONE task.\n\nRules:\n\n1. Generate ONLY ONE file.\n2. Do NOT explain anything.\n3. Do NOT use Markdown.\n4. Do NOT wrap code inside ``` blocks.\n5. Output MUST follow EXACTLY this format:\n\nPATH:\n<relative file path>\n\nCODE:\n<complete source code>\n\nDo not output anything else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2672,
+        400
+      ],
+      "id": "d965a8c0-3fc6-4f6b-b975-bedbbdb4c159",
+      "name": "Database agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Task ID:\n{{ $json.id }}\n\nTitle:\n{{ $json.title }}\n\nDescription:\n{{ $json.description }}\n\nTarget File:\n{{ $json.targetFile }}\n\nDependencies:\n{{ JSON.stringify($json.dependencies) }}\n\nGenerate the requested file.",
+        "options": {
+          "systemMessage": "You are a Senior Software Engineer.\n\nGenerate production-ready code for ONE task.\n\nRules:\n\n1. Generate ONLY ONE file.\n2. Do NOT explain anything.\n3. Do NOT use Markdown.\n4. Do NOT wrap code inside ``` blocks.\n5. Output MUST follow EXACTLY this format:\n\nPATH:\n<relative file path>\n\nCODE:\n<complete source code>\n\nDo not output anything else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2672,
+        704
+      ],
+      "id": "59a72a89-b08f-4691-990a-99a48fbe9bf7",
+      "name": "Documentation agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item, index) => {\n\n    let output = item.json.output || \"\";\n\n    // Remove surrounding markdown if entire response is fenced\n    output = output.trim();\n    output = output.replace(/^```(?:json|jsx|tsx|js|py|python|sql|md)?\\s*/i, \"\");\n    output = output.replace(/\\s*```$/i, \"\");\n\n    // -------- Extract PATH --------\n    let path = \"\";\n\n    const pathMatch = output.match(/PATH:\\s*([^\\n\\r]+)/i);\n\n    if (pathMatch) {\n        path = pathMatch[1].trim();\n    } else if (item.json.targetFile) {\n        // fallback from planner\n        path = item.json.targetFile;\n    }\n\n    // -------- Extract CODE --------\n    let code = output;\n\n    const codeIndex = output.search(/CODE:/i);\n\n    if (codeIndex >= 0) {\n        code = output.substring(codeIndex + 5).trim();\n    }\n\n    // Remove code fences inside CODE\n    code = code.replace(/^```(?:jsx|tsx|js|py|python|sql|md)?\\s*/i, \"\");\n    code = code.replace(/\\s*```$/i, \"\");\n\n    code = code.trim();\n\n    return {\n        json: {\n            path,\n            code\n        }\n    };\n\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3072,
+        80
+      ],
+      "id": "08fb43d2-638b-4246-8661-3777b139e441",
+      "name": "parse backend"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n\n    let path = item.json.path || item.json.targetFile || \"\";\n\n    let code = item.json.code || item.json.output || \"\";\n\n    // Remove markdown fences\n    code = code.replace(/^```[a-zA-Z]*\\n?/i, \"\");\n    code = code.replace(/\\n?```$/i, \"\");\n\n    // Remove extra blank lines\n    code = code.trim();\n\n    return {\n        json: {\n            path,\n            code\n        }\n    };\n\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3072,
+        -224
+      ],
+      "id": "c601a936-7408-4dd7-b59e-0c011c5545eb",
+      "name": "parse frontend"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n\n    const text = item.json.output.trim();\n\n    const pathMatch = text.match(/PATH:\\s*([^\\n\\r]+)/);\n\n    if (!pathMatch) {\n        throw new Error(\"PATH not found.\");\n    }\n\n    const path = pathMatch[1].trim();\n\n    const codeStart = text.indexOf(\"CODE:\");\n\n    if (codeStart === -1) {\n        throw new Error(\"CODE section not found.\");\n    }\n\n    const code = text.substring(codeStart + 5).trim();\n\n    return {\n        json: {\n            path,\n            code\n        }\n    };\n\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3072,
+        -480
+      ],
+      "id": "0bec7075-9725-4dc3-a83d-3a145c394580",
+      "name": "parse testing"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item, index) => {\n\n    let output = item.json.output || \"\";\n\n    // Remove surrounding markdown if entire response is fenced\n    output = output.trim();\n    output = output.replace(/^```(?:json|jsx|tsx|js|py|python|sql|md)?\\s*/i, \"\");\n    output = output.replace(/\\s*```$/i, \"\");\n\n    // -------- Extract PATH --------\n    let path = \"\";\n\n    const pathMatch = output.match(/PATH:\\s*([^\\n\\r]+)/i);\n\n    if (pathMatch) {\n        path = pathMatch[1].trim();\n    } else if (item.json.targetFile) {\n        // fallback from planner\n        path = item.json.targetFile;\n    }\n\n    // -------- Extract CODE --------\n    let code = output;\n\n    const codeIndex = output.search(/CODE:/i);\n\n    if (codeIndex >= 0) {\n        code = output.substring(codeIndex + 5).trim();\n    }\n\n    // Remove code fences inside CODE\n    code = code.replace(/^```(?:jsx|tsx|js|py|python|sql|md)?\\s*/i, \"\");\n    code = code.replace(/\\s*```$/i, \"\");\n\n    code = code.trim();\n\n    return {\n        json: {\n            path,\n            code\n        }\n    };\n\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        400
+      ],
+      "id": "33b7d47f-19bd-4243-9f39-efcbfe50b559",
+      "name": "parse database"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n\n    const text = item.json.output.trim();\n\n    const pathMatch = text.match(/PATH:\\s*([^\\n\\r]+)/);\n\n    if (!pathMatch) {\n        throw new Error(\"PATH not found.\");\n    }\n\n    const path = pathMatch[1].trim();\n\n    const codeStart = text.indexOf(\"CODE:\");\n\n    if (codeStart === -1) {\n        throw new Error(\"CODE section not found.\");\n    }\n\n    const code = text.substring(codeStart + 5).trim();\n\n    return {\n        json: {\n            path,\n            code\n        }\n    };\n\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        704
+      ],
+      "id": "f7c15338-76ab-4279-86bb-82c499284f5e",
+      "name": "parse documentation"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3552,
+        32
+      ],
+      "id": "7edaa687-3f6e-4b1b-8dd0-d809a2890bc6",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Task ID:\n{{ $json.id }}\n\nTitle:\n{{ $json.title }}\n\nDescription:\n{{ $json.description }}\n\nTarget File:\n{{ $json.targetFile }}\n\nDependencies:\n{{ JSON.stringify($json.dependencies) }}\n\nGenerate the requested file.",
+        "options": {
+          "systemMessage": "You are a Senior Software Engineer.\n\nGenerate production-ready code for ONE task.\n\nRules:\n\n1. Generate ONLY ONE file.\n2. Do NOT explain anything.\n3. Do NOT use Markdown.\n4. Do NOT wrap code inside ``` blocks.\n5. Output MUST follow EXACTLY this format:\n\nPATH:\n<relative file path>\n\nCODE:\n<complete source code>\n\nDo not output anything else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2672,
+        -224
+      ],
+      "id": "734af4b3-1f90-4743-b720-916212a46b0c",
+      "name": "frontend agent"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        368,
+        176
+      ],
+      "id": "3fe2cec0-7cf2-4490-898d-803db27465ab",
+      "name": "Ollama Chat Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1456,
+        480
+      ],
+      "id": "27ab3d28-fd91-42ef-81ac-afaf34c0a90e",
+      "name": "Google Gemini Chat Model10",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gqY8lFr4z7VAVjUw",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        864,
+        208
+      ],
+      "id": "24a6d282-fead-4890-91ed-6ab5aa449c20",
+      "name": "Ollama Chat Model2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        272
+      ],
+      "id": "b9328276-23f8-4ea9-a1a9-6e622b95d1d0",
+      "name": "Ollama Chat Model4",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Task ID:\n{{ $json.id }}\n\nTitle:\n{{ $json.title }}\n\nDescription:\n{{ $json.description }}\n\nTarget File:\n{{ $json.targetFile }}\n\nDependencies:\n{{ JSON.stringify($json.dependencies) }}\n\nGenerate the requested file.",
+        "options": {
+          "systemMessage": "You are a Senior Software Engineer.\n\nGenerate production-ready code for ONE task.\n\nRules:\n\n1. Generate ONLY ONE file.\n2. Do NOT explain anything.\n3. Do NOT use Markdown.\n4. Do NOT wrap code inside ``` blocks.\n5. Output MUST follow EXACTLY this format:\n\nPATH:\n<relative file path>\n\nCODE:\n<complete source code>\n\nDo not output anything else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2688,
+        -480
+      ],
+      "id": "7cb902e2-4f54-4c59-8c9b-6e5e78e516d7",
+      "name": "test agent1"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        848
+      ],
+      "id": "f4554cb9-37ce-4365-9124-089793575ccc",
+      "name": "Ollama Chat Model5",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        544
+      ],
+      "id": "8cc54234-0815-40f0-bbcc-2a4552f1549d",
+      "name": "Ollama Chat Model6",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        224
+      ],
+      "id": "367f2078-e62c-4fd1-9381-6f2db0a18a1e",
+      "name": "Ollama Chat Model7",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        -80
+      ],
+      "id": "8a64e06b-cbf3-4c3b-9c40-331bb6b0d3c5",
+      "name": "Ollama Chat Model8",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:1.5b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        -352
+      ],
+      "id": "d76a9761-6a12-4323-9184-8f5a6bc44850",
+      "name": "Ollama Chat Model9",
+      "credentials": {
+        "ollamaApi": {
+          "id": "hYRVYOTGr3d63PMK",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let text = $input.first().json.output;\n\ntext = text.replace(/^```json\\s*/i, \"\");\ntext = text.replace(/\\s*```$/i, \"\");\n\nreturn [\n  {\n    json: JSON.parse(text)\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        0
+      ],
+      "id": "f32acbdb-bb31-4861-bc56-2a4c230e7e25",
+      "name": "Merge tasks"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": " tasks",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2048,
+        0
+      ],
+      "id": "105852f8-f8ca-4b37-bae9-4199fda454d3",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"backend\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/$defs/task\"\n      }\n    },\n    \"frontend\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/$defs/task\"\n      }\n    },\n    \"database\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/$defs/task\"\n      }\n    },\n    \"testing\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/$defs/task\"\n      }\n    },\n    \"documentation\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/$defs/task\"\n      }\n    }\n  },\n  \"$defs\": {\n    \"task\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"id\": {\n          \"type\": \"string\"\n        },\n        \"title\": {\n          \"type\": \"string\"\n        },\n        \"description\": {\n          \"type\": \"string\"\n        },\n        \"targetFile\": {\n          \"type\": \"string\"\n        },\n        \"dependencies\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"string\"\n          }\n        }\n      },\n      \"required\": [\n        \"id\",\n        \"title\",\n        \"description\",\n        \"targetFile\"\n      ],\n      \"additionalProperties\": false\n    }\n  },\n  \"required\": [\n    \"backend\",\n    \"frontend\",\n    \"database\",\n    \"testing\",\n    \"documentation\"\n  ],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        208
+      ],
+      "id": "0eb3f2a5-ab6d-4eeb-951b-6f9641de080d",
+      "name": "Structured Output Parser1",
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.id }}",
+                    "rightValue": "BE-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "d0fd8668-d255-4340-bc78-2b2de51a8567"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "cc07dfed-f230-433c-a0df-00433d7d0b1c",
+                    "leftValue": "={{ $json.id }}",
+                    "rightValue": "FE-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "235d6bff-49fa-4dba-a48e-f70cf260d33c",
+                    "leftValue": "={{ $json.id }}",
+                    "rightValue": "DB-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6dcf3af1-e7a0-45e8-8254-b0e31312c2c9",
+                    "leftValue": "={{ $json.id }}",
+                    "rightValue": "TE-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a220511d-49c8-4139-86ec-5c1efe1b5427",
+                    "leftValue": "={{ $json.id }}",
+                    "rightValue": "DOC-",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2320,
+        -48
+      ],
+      "id": "1e7b8c92-a7dd-4f8a-86a7-43a4c0c7449e",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileMap = new Map();\n\nfor (const item of $input.all()) {\n  const path = item.json.path?.trim();\n  const code = item.json.code?.trim();\n\n  if (!path || !code) continue;\n\n  fileMap.set(path, {\n    path,\n    code\n  });\n}\n\nreturn [...fileMap.values()].map(file => ({\n  json: file\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3728,
+        80
+      ],
+      "id": "d8986d2d-6fcb-4847-8018-2085032a60b6",
+      "name": "cleanupproject"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errors = [];\nconst files = [];\n\nfor (const item of $input.all()) {\n\n    const { path, code } = item.json;\n\n    if (!path)\n        errors.push(\"Missing path\");\n\n    if (!code)\n        errors.push(`${path} has no code`);\n\n    if (code.includes(\"```\"))\n        errors.push(`${path} still contains markdown`);\n\n    if (code.startsWith(\"PATH:\"))\n        errors.push(`${path} still contains PATH label`);\n\n    files.push(item.json);\n}\n\nreturn [\n{\njson:{\n    files,\n    errors\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3936,
+        80
+      ],
+      "id": "6f909e64-3299-4969-a2b4-32dae07af7d4",
+      "name": "validation step"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "ANU5565",
+          "mode": "list",
+          "cachedResultName": "ANU5565",
+          "cachedResultUrl": "https://github.com/ANU5565"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "AD-Store",
+          "mode": "list",
+          "cachedResultName": "AD-Store",
+          "cachedResultUrl": "https://github.com/ANU5565/AD-Store"
+        },
+        "filePath": "={{ $json.files[9].path }}{{ $json.files[10].path }}{{ $json.files[11].path }}{{ $json.files[12].path }}",
+        "binaryData": "={{ $json.files[9].code }}{{ $json.files[10].code }}{{ $json.files[11].code }}{{ $json.files[12].code }}",
+        "commitMessage": "Generated by Automation 💕"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        4144,
+        80
+      ],
+      "id": "3d4f306e-7982-4dfd-bbb0-92490fb53046",
+      "name": "Create a file",
+      "webhookId": "f4f1d2b0-8b77-415e-9010-082027995966",
+      "credentials": {
+        "githubApi": {
+          "id": "oQglbnlU4GWagtuU",
+          "name": "GitHub account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "project request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "project request": {
+      "main": [
+        [
+          {
+            "node": "project manager agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "project manager agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Architucte agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge architucte": {
+      "main": [
+        [
+          {
+            "node": "test planner agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Architucte agent": {
+      "main": [
+        [
+          {
+            "node": "Merge architucte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "test planner agent": {
+      "main": [
+        [
+          {
+            "node": "Merge tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documentation agent": {
+      "main": [
+        [
+          {
+            "node": "parse documentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "backend agent": {
+      "main": [
+        [
+          {
+            "node": "parse backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Database agent": {
+      "main": [
+        [
+          {
+            "node": "parse database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse documentation": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "parse testing": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "parse frontend": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "parse backend": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse database": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "cleanupproject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "frontend agent": {
+      "main": [
+        [
+          {
+            "node": "parse frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "project manager agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model10": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Ollama Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Architucte agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "test planner agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "test agent1": {
+      "main": [
+        [
+          {
+            "node": "parse testing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Documentation agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Database agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "backend agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "frontend agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model9": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "test agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge tasks": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "backend agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "frontend agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Database agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "test agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Documentation agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cleanupproject": {
+      "main": [
+        [
+          {
+            "node": "validation step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validation step": {
+      "main": [
+        [
+          {
+            "node": "Create a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fb451eb0-f95e-4cee-a8fb-6fe823632d75",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2f6007bb7acb601faf925c5a7b77b2c78223e266190c7c25ba071fba311ff826"
+  },
+  "nodeGroups": [],
+  "id": "xDY9TeeXT5XBrTMx",
+  "tags": []
+}
